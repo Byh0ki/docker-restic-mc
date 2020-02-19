@@ -8,8 +8,7 @@ ENV GOPATH /go
 ENV CGO_ENABLED 0
 ENV GO111MODULE on
 
-RUN set -e \
- && apk add --update --no-cache ca-certificates curl \
+RUN apk add --update --no-cache ca-certificates curl \
  && curl -sL -o mc.tar.gz https://github.com/minio/mc/archive/${MINIO_CLIENT_VERSION}.tar.gz \
  && tar xzf mc.tar.gz \
  && cd mc-${MINIO_CLIENT_VERSION} \
@@ -26,8 +25,7 @@ RUN curl -sL -o restic.tar.gz https://github.com/restic/restic/releases/download
 
 FROM alpine:3.11.3
 
-RUN set -e \
-    && apk add --update --no-cache ca-certificates fuse openssh-client
+RUN apk add --update --no-cache ca-certificates fuse openssh-client
 
 COPY --from=builder /usr/local/bin/restic /usr/local/bin/restic
 
