@@ -25,12 +25,14 @@ RUN curl -sL -o restic.tar.gz https://github.com/restic/restic/releases/download
 
 FROM alpine:3.11.3
 
-RUN apk add --update --no-cache ca-certificates fuse openssh-client
+RUN apk add --update --no-cache ca-certificates fuse openssh-client bash
 
 COPY --from=builder /usr/local/bin/restic /usr/local/bin/restic
 
 COPY --from=builder /go/bin/mc /usr/local/bin/mc
 
+COPY backup.sh /backup.sh
+
 VOLUME /data
 
-ENTRYPOINT ["/usr/local/bin/restic"]
+ENTRYPOINT ["/backup.sh"]
