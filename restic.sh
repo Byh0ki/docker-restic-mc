@@ -17,12 +17,13 @@ usage()
     echo -e "RESTIC_PASSWORD"
     echo -e "BACKUP_PATH                (/data)"
     echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7 --keep-weekly 1 --keep-monthly 12)"
-    exit 1
+    exit "${1:-1}"
 }
 
 check_env()
 {
     env_var="MINIO_BUCKET_NAME MINIO_ACCESS_KEY MINIO_SECRET_KEY MINIO_HOST RESTIC_PASSWORD"
+    local cur=""
     for var in $env_var; do
         eval cur=\$"$var"
         [[ -n "${cur}" ]] || (echo "'${var}' must not be empty." && usage)
@@ -42,6 +43,7 @@ backup()
 
     restic -r "${RESTIC_REPO}" --no-cache backup "${BACKUP_PATH}"
 
+    # shellcheck disable=SC2086
     restic -r "${RESTIC_REPO}" --no-cache forget ${BACKUP_FORGET_POLICY} --prune
 
     echo "Backup completed at $(date +"${DATE_FORMAT}")"
@@ -77,7 +79,7 @@ export AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
 export AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
 
 if [ "$#" -ne 1 ]; then
-    usage
+    usage 2
 fi
 
 case "$1" in
@@ -91,6 +93,6 @@ case "$1" in
         snapshots
         ;;
     *)
-        usage
+        usage 2
 esac
 
