@@ -47,6 +47,11 @@ backup()
     echo "Backup completed at $(date +"${DATE_FORMAT}")"
 }
 
+check()
+{
+    restic -r "${RESTIC_REPO}" --no-cache check
+}
+
 snapshots()
 {
     restic -r "${RESTIC_REPO}" --no-cache snapshots
@@ -78,6 +83,9 @@ fi
 case "$1" in
     "backup")
         backup
+        ;;
+    "check")
+        check
         ;;
     "snapshots")
         snapshots
