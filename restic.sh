@@ -4,7 +4,7 @@ set -e
 
 usage()
 {
-    echo -e "$(basename "$0") backup|snapshots"
+    echo -e "$(basename "$0") backup|check|restore|snapshots"
     echo -e "List of ENV vars used by this script (default):"
     echo
     echo -e "DATE_FORMAT                (%D-%T)"
@@ -15,7 +15,10 @@ usage()
     echo -e "MINIO_HOST_PORT            (443)"
     echo -e "MINIO_BUCKET_NAME"
     echo -e "RESTIC_PASSWORD"
-    echo -e "BACKUP_PATH                (/data)"
+    echo -e "BACKUP_PATH                (/data/backup)"
+    echo -e "RESTORE_PATH               (/data/restore)"
+    echo -e "RESTORE_SNAPSHOT_ID        (latest)"
+    echo -e "RESTORE_EXTRA_ARGS"
     echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7 --keep-weekly 1 --keep-monthly 12)"
     exit "${1:-1}"
 }
@@ -54,6 +57,16 @@ check()
     restic -r "${RESTIC_REPO}" --no-cache check
 }
 
+restore()
+{
+    echo "Starting restore at $(date +"${DATE_FORMAT}")"
+
+    # shellcheck disable=SC2086
+    restic -r "${RESTIC_REPO}" --no-cache restore "${RESTORE_SNAPSHOT_ID}" --target "${RESTORE_PATH}" $RESTORE_EXTRA_ARGS
+
+    echo "Restore completed at $(date +"${DATE_FORMAT}")"
+}
+
 snapshots()
 {
     restic -r "${RESTIC_REPO}" --no-cache snapshots
@@ -63,8 +76,13 @@ snapshots()
 MINIO_CONNECTION_SCHEME="${MINIO_CONNECTION_SCHEME:-https}"
 
 # Backup vars
-BACKUP_PATH="${BACKUP_PATH:-/data}"
+BACKUP_PATH="${BACKUP_PATH:-/data/backup}"
 BACKUP_FORGET_POLICY="${BACKUP_FORGET_POLICY:---keep-daily 7 --keep-weekly 1 --keep-monthly 12}"
+
+# Restore
+RESTORE_PATH="${RESTORE_PATH:-/data/restore}"
+RESTORE_SNAPSHOT_ID="${RESTORE_SNAPSHOT_ID:-latest}"
+RESTORE_EXTRA_ARGS="${RESTORE_EXTRA_ARGS}"
 
 # Misc vars
 BACKUP_ALIAS='minio_backup'
@@ -89,10 +107,12 @@ case "$1" in
     "check")
         check
         ;;
+    "restore")
+        restore
+        ;;
     "snapshots")
         snapshots
         ;;
     *)
         usage 2
 esac
-
