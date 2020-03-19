@@ -43,7 +43,7 @@ backup()
 {
     echo "Starting backup at $(date +"${DATE_FORMAT}")"
 
-    mc mb -p "${BACKUP_ALIAS}/${MINIO_BUCKET_NAME}"
+    mc mb -p "${MINIO_ALIAS}/${MINIO_BUCKET_NAME}"
 
     if ! restic_wrapper snapshots 1>/dev/null 2>&1; then
         echo "Restic repo is not initialized, initialize..."
@@ -93,14 +93,14 @@ SNAPSHOT_ID="${SNAPSHOT_ID:-latest}"
 RESTORE_EXTRA_ARGS="${RESTORE_EXTRA_ARGS}"
 
 # Misc vars
-BACKUP_ALIAS='minio_backup'
+MINIO_ALIAS='minio_backup'
 DATE_FORMAT="${DATE_FORMAT:-%D-%T}"
 
 # Check if the env is valid
 check_env
 
 # Minio vars
-export MC_HOST_${BACKUP_ALIAS}="${MINIO_CONNECTION_SCHEME}://${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}@${MINIO_HOST}:${MINIO_HOST_PORT}"
+export MC_HOST_${MINIO_ALIAS}="${MINIO_CONNECTION_SCHEME}://${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}@${MINIO_HOST}:${MINIO_HOST_PORT}"
 export MINIO_ENDPOINT="s3:${MINIO_CONNECTION_SCHEME}://${MINIO_HOST}:${MINIO_HOST_PORT}"
 
 # Restic vars
