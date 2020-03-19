@@ -4,7 +4,8 @@ set -e
 
 usage()
 {
-    echo -e "$(basename "$0") backup|check|ls|restore|snapshots|stats"
+    echo -e "$(basename "$0") [-h|--help] backup|restore|<custom restic cmd>"
+    echo -e "               [-h|--help] display this help message"
     echo -e "List of ENV vars used by this script (default):"
     echo
     echo -e "DATE_FORMAT                (%D-%T)"
@@ -21,6 +22,10 @@ usage()
     echo -e "RESTORE_PATH               (/data/restore)"
     echo -e "RESTORE_EXTRA_ARGS"
     echo -e "SNAPSHOT_ID                (latest)"
+    echo
+    echo -e "A custom cmd will call restic with the given arguments using the \
+env vars to connect to the restic repository. NB: env vars like 'SNAPSHOT_ID' \
+are not taken in consideration while using custom commands."
     exit "${1:-1}"
 }
 
@@ -40,9 +45,9 @@ backup()
 
     mc mb -p "${BACKUP_ALIAS}/${MINIO_BUCKET_NAME}"
 
-    if ! restic -r "${RESTIC_REPO}" --no-cache snapshots 1>/dev/null 2>&1; then
+    if ! restic_wrapper snapshots 1>/dev/null 2>&1; then
         echo "Restic repo is not initialized, initialize..."
-        restic -r "${RESTIC_REPO}" --no-cache init
+        restic_wrapper init
     fi
 
     # Change dir to $BACKUP_PATH, it ensure that the snapshot will not have
@@ -51,23 +56,18 @@ backup()
 
     # Actual backup
     # shellcheck disable=SC2086
-    restic -r "${RESTIC_REPO}" --no-cache backup ${FILES_TO_BACKUP}
+    restic_wrapper backup ${FILES_TO_BACKUP}
 
     # Deleting backups that do no comply with the policy
     # shellcheck disable=SC2086
-    restic -r "${RESTIC_REPO}" --no-cache forget ${BACKUP_FORGET_POLICY} --prune
+    restic_wrapper forget ${BACKUP_FORGET_POLICY} --prune
 
     echo "Backup completed at $(date +"${DATE_FORMAT}")"
 }
 
-check()
+restic_wrapper()
 {
-    restic -r "${RESTIC_REPO}" --no-cache check
-}
-
-ls_repo()
-{
-    restic -r "${RESTIC_REPO}" --no-cache ls "${SNAPSHOT_ID}"
+    restic -r "${RESTIC_REPO}" --no-cache "$@"
 }
 
 restore()
@@ -75,19 +75,9 @@ restore()
     echo "Starting restore at $(date +"${DATE_FORMAT}")"
 
     # shellcheck disable=SC2086
-    restic -r "${RESTIC_REPO}" --no-cache restore "${SNAPSHOT_ID}" --target "${RESTORE_PATH}" $RESTORE_EXTRA_ARGS
+    restic_wrapper restore "${SNAPSHOT_ID}" --target "${RESTORE_PATH}" $RESTORE_EXTRA_ARGS
 
     echo "Restore completed at $(date +"${DATE_FORMAT}")"
-}
-
-snapshots()
-{
-    restic -r "${RESTIC_REPO}" --no-cache snapshots
-}
-
-stats()
-{
-    restic -r "${RESTIC_REPO}" --no-cache stats "${SNAPSHOT_ID}"
 }
 
 # Minio vars
@@ -118,29 +108,25 @@ export RESTIC_REPO="${MINIO_ENDPOINT}/${MINIO_BUCKET_NAME}"
 export AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
 export AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -lt 1 ]; then
     usage 2
 fi
+
+# We check for the -h flag before the rest of the options
+case "${1}" in
+    -h|--help)
+        usage 0
+        ;;
+esac
 
 case "$1" in
     "backup")
         backup
         ;;
-    "check")
-        check
-        ;;
-    "ls")
-        ls_repo
-        ;;
     "restore")
         restore
         ;;
-    "snapshots")
-        snapshots
-        ;;
-    "stats")
-        stats
-        ;;
     *)
-        usage 2
+        restic_wrapper "$@"
+        ;;
 esac
