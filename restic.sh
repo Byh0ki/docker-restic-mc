@@ -4,7 +4,7 @@ set -e
 
 usage()
 {
-    echo -e "$(basename "$0") backup|check|restore|snapshots"
+    echo -e "$(basename "$0") backup|check|ls|restore|snapshots|stats"
     echo -e "List of ENV vars used by this script (default):"
     echo
     echo -e "DATE_FORMAT                (%D-%T)"
@@ -19,8 +19,8 @@ usage()
     echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7 --keep-weekly 1 --keep-monthly 12)"
     echo -e "FILES_TO_BACKUP            (.) => everything in \$BACKUP_PATH"
     echo -e "RESTORE_PATH               (/data/restore)"
-    echo -e "RESTORE_SNAPSHOT_ID        (latest)"
     echo -e "RESTORE_EXTRA_ARGS"
+    echo -e "SNAPSHOT_ID                (latest)"
     exit "${1:-1}"
 }
 
@@ -65,12 +65,17 @@ check()
     restic -r "${RESTIC_REPO}" --no-cache check
 }
 
+ls_repo()
+{
+    restic -r "${RESTIC_REPO}" --no-cache ls "${SNAPSHOT_ID}"
+}
+
 restore()
 {
     echo "Starting restore at $(date +"${DATE_FORMAT}")"
 
     # shellcheck disable=SC2086
-    restic -r "${RESTIC_REPO}" --no-cache restore "${RESTORE_SNAPSHOT_ID}" --target "${RESTORE_PATH}" $RESTORE_EXTRA_ARGS
+    restic -r "${RESTIC_REPO}" --no-cache restore "${SNAPSHOT_ID}" --target "${RESTORE_PATH}" $RESTORE_EXTRA_ARGS
 
     echo "Restore completed at $(date +"${DATE_FORMAT}")"
 }
@@ -78,6 +83,11 @@ restore()
 snapshots()
 {
     restic -r "${RESTIC_REPO}" --no-cache snapshots
+}
+
+stats()
+{
+    restic -r "${RESTIC_REPO}" --no-cache stats "${SNAPSHOT_ID}"
 }
 
 # Minio vars
@@ -89,7 +99,7 @@ BACKUP_FORGET_POLICY="${BACKUP_FORGET_POLICY:---keep-daily 7 --keep-weekly 1 --k
 
 # Restore vars
 RESTORE_PATH="${RESTORE_PATH:-/data/restore}"
-RESTORE_SNAPSHOT_ID="${RESTORE_SNAPSHOT_ID:-latest}"
+SNAPSHOT_ID="${SNAPSHOT_ID:-latest}"
 RESTORE_EXTRA_ARGS="${RESTORE_EXTRA_ARGS}"
 
 # Misc vars
@@ -119,11 +129,17 @@ case "$1" in
     "check")
         check
         ;;
+    "ls")
+        ls_repo
+        ;;
     "restore")
         restore
         ;;
     "snapshots")
         snapshots
+        ;;
+    "stats")
+        stats
         ;;
     *)
         usage 2
