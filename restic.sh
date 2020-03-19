@@ -16,10 +16,11 @@ usage()
     echo -e "MINIO_BUCKET_NAME"
     echo -e "RESTIC_PASSWORD"
     echo -e "BACKUP_PATH                (/data/backup)"
+    echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7 --keep-weekly 1 --keep-monthly 12)"
+    echo -e "FILES_TO_BACKUP            (.) => everything in \$BACKUP_PATH"
     echo -e "RESTORE_PATH               (/data/restore)"
     echo -e "RESTORE_SNAPSHOT_ID        (latest)"
     echo -e "RESTORE_EXTRA_ARGS"
-    echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7 --keep-weekly 1 --keep-monthly 12)"
     exit "${1:-1}"
 }
 
@@ -44,8 +45,15 @@ backup()
         restic -r "${RESTIC_REPO}" --no-cache init
     fi
 
-    restic -r "${RESTIC_REPO}" --no-cache backup "${BACKUP_PATH}"
+    # Change dir to $BACKUP_PATH, it ensure that the snapshot will not have
+    # something like /data/backup at its root
+    cd "$BACKUP_PATH"
 
+    # Actual backup
+    # shellcheck disable=SC2086
+    restic -r "${RESTIC_REPO}" --no-cache backup ${FILES_TO_BACKUP}
+
+    # Deleting backups that do no comply with the policy
     # shellcheck disable=SC2086
     restic -r "${RESTIC_REPO}" --no-cache forget ${BACKUP_FORGET_POLICY} --prune
 
@@ -79,7 +87,7 @@ MINIO_CONNECTION_SCHEME="${MINIO_CONNECTION_SCHEME:-https}"
 BACKUP_PATH="${BACKUP_PATH:-/data/backup}"
 BACKUP_FORGET_POLICY="${BACKUP_FORGET_POLICY:---keep-daily 7 --keep-weekly 1 --keep-monthly 12}"
 
-# Restore
+# Restore vars
 RESTORE_PATH="${RESTORE_PATH:-/data/restore}"
 RESTORE_SNAPSHOT_ID="${RESTORE_SNAPSHOT_ID:-latest}"
 RESTORE_EXTRA_ARGS="${RESTORE_EXTRA_ARGS}"
@@ -88,10 +96,14 @@ RESTORE_EXTRA_ARGS="${RESTORE_EXTRA_ARGS}"
 BACKUP_ALIAS='minio_backup'
 DATE_FORMAT="${DATE_FORMAT:-%D-%T}"
 
+# Check if the env is valid
 check_env
 
+# Minio vars
 export MC_HOST_${BACKUP_ALIAS}="${MINIO_CONNECTION_SCHEME}://${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}@${MINIO_HOST}:${MINIO_HOST_PORT}"
 export MINIO_ENDPOINT="s3:${MINIO_CONNECTION_SCHEME}://${MINIO_HOST}:${MINIO_HOST_PORT}"
+
+# Restic vars
 export RESTIC_REPO="${MINIO_ENDPOINT}/${MINIO_BUCKET_NAME}"
 export AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
 export AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
