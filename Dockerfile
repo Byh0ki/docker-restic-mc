@@ -33,8 +33,6 @@ COPY --from=builder /go/bin/mc /usr/local/bin/mc
 
 COPY restic.sh /restic.sh
 
-VOLUME /data/backup
-
-VOLUME /data/restore
+VOLUME /data
 
 ENTRYPOINT ["/restic.sh"]
