@@ -1,3 +1,6 @@
+![Docker Pulls](https://img.shields.io/docker/pulls/byh0ki/restic-mc)
+![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Byh0ki/docker-restic-mc?include_prereleases)
+
 This repo contain a Dockerfile used to generate a docker image with restic and
 minio client.
 
