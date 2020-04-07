@@ -65,6 +65,7 @@ restic_wrapper()
 
 # Minio vars
 MINIO_CONNECTION_SCHEME="${MINIO_CONNECTION_SCHEME:-https}"
+MINIO_HOST_PORT="${MINIO_HOST_PORT:-443}"
 
 # Backup vars
 BACKUP_FORGET_POLICY="${BACKUP_FORGET_POLICY:---keep-daily 7 --keep-weekly 1 --keep-monthly 12}"
