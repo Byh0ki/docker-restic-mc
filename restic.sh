@@ -16,7 +16,10 @@ usage()
     echo -e "MINIO_BUCKET_NAME"
     echo -e "RESTIC_PASSWORD"
     echo -e "VOLUME_PATH                (/data)"
-    echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7 --keep-weekly 1 --keep-monthly 12)"
+    echo -e "BACKUP_FORGET_POLICY       (--keep-daily 7"
+    echo -e "                            --keep-weekly 8"
+    echo -e "                            --keep-monthly 12"
+    echo -e "                            --keep-yearly 2)"
     echo
     echo -e "A restic cmd will call restic with the given arguments using the \
 env vars to connect to the restic repository. NB: env vars like \
@@ -68,7 +71,8 @@ MINIO_CONNECTION_SCHEME="${MINIO_CONNECTION_SCHEME:-https}"
 MINIO_HOST_PORT="${MINIO_HOST_PORT:-443}"
 
 # Backup vars
-BACKUP_FORGET_POLICY="${BACKUP_FORGET_POLICY:---keep-daily 7 --keep-weekly 1 --keep-monthly 12}"
+DEFAULT_FORGET_POLICY="--keep-daily 7 --keep-weekly 8 --keep-monthly 12 --keep-yearly 2"
+BACKUP_FORGET_POLICY="${BACKUP_FORGET_POLICY:-"$DEFAULT_FORGET_POLICY"}"
 
 # Misc vars
 VOLUME_PATH="${VOLUME_PATH:-/data}"
