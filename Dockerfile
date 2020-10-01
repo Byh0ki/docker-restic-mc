@@ -20,8 +20,6 @@ RUN apk add --update --no-cache ca-certificates fuse openssh-client bash
 
 COPY --from=builder /usr/local/bin/restic /usr/local/bin/restic
 
-COPY restic.sh /restic.sh
-
 VOLUME /data
 
-ENTRYPOINT ["/restic.sh"]
+ENTRYPOINT ["/usr/local/bin/restic"]
